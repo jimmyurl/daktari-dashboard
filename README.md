@@ -18,8 +18,8 @@ Supabase → SQL Editor → paste `../daktari_full/supabase/schema.sql` → Run
 ### 2. Run admin_users.sql
 Supabase → SQL Editor → paste `admin_users.sql` → Run
 This creates `daktari.admin_users` table and your first login:
-- Email: jpmpanga@gmail.com
-- Password: REDACTED
+- Email: your-email@example.com
+- Password: your-password
 
 ### 3. Set .env
 Edit `.env` with your real anon key (eyJ... from Supabase → Settings → API):
@@ -32,7 +32,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGci...
 ```bash
 npm run dev
 ```
-Sign in at http://localhost:5173 with jpmpanga@gmail.com / REDACTED
+Sign in at http://localhost:5173 with your credentials
 
 ## Structure
 ```
