@@ -1,6 +1,6 @@
 # Daktari Admin Dashboard
 
-A modern, secure admin panel for managing healthcare providers — built with React, Vite, and Supabase.
+This application is a modern healthcare booking system designed to simplify how patients connect with medical providers. It focuses on making appointment scheduling seamless, efficient, and fully digital.
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite)
