@@ -102,6 +102,68 @@ Create a `.env` file in the project root:
 
 ---
 
+## 🚨 Accidentally Pushed `.env`?
+
+If you accidentally committed and pushed your `.env` file, act fast — the secrets are now in your git history even if you delete the file.
+
+### Step 1 — Install git-filter-repo
+
+```powershell
+pip install git-filter-repo
+```
+
+### Step 2 — Create a replacements file
+
+List every secret value you want scrubbed:
+
+```powershell
+# PowerShell
+@"
+your_actual_supabase_url==>REDACTED
+your_actual_anon_key==>REDACTED
+"@ | Set-Content replacements.txt -Encoding UTF8
+```
+
+```bash
+# Git Bash
+printf 'your_actual_supabase_url==>REDACTED\nyour_actual_anon_key==>REDACTED\n' > replacements.txt
+```
+
+### Step 3 — Rewrite history
+
+```powershell
+# Find the executable location first
+where.exe /R C:\Users git-filter-repo*
+
+# Then run it (use your actual path)
+C:\Users\<you>\AppData\Local\Python\pythoncore-3.14-64\Scripts\git-filter-repo.exe --replace-text replacements.txt --force
+```
+
+### Step 4 — Force push the clean history
+
+```bash
+git remote add origin https://github.com/your-username/your-repo.git
+git push origin --force --all
+```
+
+### Step 5 — Verify secrets are gone
+
+```bash
+git grep "your_secret" $(git log --all --oneline | awk '{print $1}')
+```
+
+If nothing is returned, you are clean.
+
+### Step 6 — Clean up
+
+```bash
+rm replacements.txt
+```
+
+> ⚠️ **Important:** Rewriting history changes all commit hashes. Anyone else who has cloned the repo must re-clone. Also rotate any exposed secrets immediately — change passwords and regenerate API keys in your service dashboards.
+
+---
+
 ## 📄 License
 
 MIT © [jimmyurl](https://github.com/jimmyurl)
