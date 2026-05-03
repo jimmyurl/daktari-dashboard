@@ -8,6 +8,7 @@ import DoctorsPage from './pages/DoctorsPage'
 import AppointmentsPage from './pages/AppointmentsPage'
 import AdminsPage from './pages/AdminsPage'
 import SetupPage from './pages/SetupPage'
+import RevenuePage from './pages/RevenuePage'
 
 function ProtectedRoute({ children }) {
   const { admin } = useAuth()
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="patients"        element={<PatientsPage />} />
         <Route path="doctors"         element={<DoctorsPage />} />
         <Route path="appointments"    element={<AppointmentsPage />} />
+        <Route path="revenue"         element={<RevenuePage />} />
         <Route path="admins"          element={<AdminsPage />} />
         <Route path="setup"           element={<SetupPage />} />
       </Route>
