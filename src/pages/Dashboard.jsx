@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { db, supabase } from '../lib/supabase'
+import { db } from '../lib/supabase'
 import { format } from 'date-fns'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
@@ -12,9 +12,31 @@ function StatCard({ icon, label, value, color }) {
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
       style={{ borderLeft: `4px solid ${color}` }}>
       <div className="text-2xl mb-2">{icon}</div>
-      <div className="text-3xl font-extrabold" style={{ color }}>{value ?? '—'}</div>
+      <div className="text-3xl font-extrabold" style={{ color }}>{value ?? <span className="text-gray-300 text-2xl">—</span>}</div>
       <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide mt-1">{label}</div>
     </div>
+  )
+}
+
+// Stethoscope SVG logo — replaces the broken emoji logo in the sidebar
+export function DaktariLogo({ size = 32 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#0D5C4A"/>
+      {/* stethoscope body */}
+      <path d="M12 10 C12 10 10 10 10 13 L10 20 C10 25 14 28 18 28 C22 28 26 25 26 20 L26 18"
+        stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+      {/* chest piece circle */}
+      <circle cx="27" cy="15" r="3.5" stroke="white" strokeWidth="2" fill="none"/>
+      {/* tubing up to ears */}
+      <path d="M12 10 L12 8 M10 8 C10 6 12 5 13 5 M26 10 L26 8 M28 8 C28 6 26 5 25 5"
+        stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+      {/* ear tips */}
+      <circle cx="13" cy="5" r="1.5" fill="white"/>
+      <circle cx="25" cy="5" r="1.5" fill="white"/>
+      {/* diaphragm dot */}
+      <circle cx="27" cy="15" r="1" fill="white"/>
+    </svg>
   )
 }
 
@@ -25,18 +47,41 @@ export default function Dashboard() {
   const [pie,    setPie]    = useState([])
 
   useEffect(() => {
-    // Stats
-    supabase.rpc('daktari.get_dashboard_stats').then(({ data }) => {
-      if (data) setStats(data)
+    const today = format(new Date(), 'yyyy-MM-dd')
+
+    // ── Stats: computed directly from the appointments table ──────────────
+    Promise.all([
+      db.from('patients').select('id', { count: 'exact', head: true }),
+      db.from('doctors').select('id', { count: 'exact', head: true }),
+      db.from('appointments').select('id', { count: 'exact', head: true }),
+      db.from('appointments').select('id', { count: 'exact', head: true })
+          .eq('appointment_date', today),
+      db.from('appointments').select('id', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+      db.from('appointments').select('amount_tsh').not('amount_tsh', 'is', null),
+    ]).then(([patients, doctors, appts, todayAppts, pending, revenue]) => {
+      const totalRevenue = (revenue.data || []).reduce(
+        (sum, r) => sum + Number(r.amount_tsh || 0), 0
+      )
+      setStats({
+        total_patients:       patients.count ?? 0,
+        total_doctors:        doctors.count  ?? 0,
+        total_appointments:   appts.count    ?? 0,
+        today_appointments:   todayAppts.count ?? 0,
+        pending_appointments: pending.count  ?? 0,
+        total_revenue:        totalRevenue,
+      })
     })
-    // Recent appointments
+
+    // ── Recent appointments ───────────────────────────────────────────────
     db.from('appointments')
       .select('*,doctor:doctors(full_name,initials,color_hex),patient:patients(full_name,phone)')
       .order('created_at', { ascending: false }).limit(8)
       .then(({ data }) => { if (data) setRecent(data) })
-    // Trend
+
+    // ── Trend (last 7 distinct days) ──────────────────────────────────────
     db.from('appointments').select('appointment_date')
-      .order('appointment_date', { ascending: false }).limit(60)
+      .order('appointment_date', { ascending: false }).limit(200)
       .then(({ data }) => {
         if (!data) return
         const counts = {}
@@ -44,19 +89,22 @@ export default function Dashboard() {
           const d = format(new Date(a.appointment_date), 'MMM d')
           counts[d] = (counts[d] || 0) + 1
         })
-        setTrend(Object.entries(counts).slice(0,7).reverse()
-          .map(([date, count]) => ({ date, count })))
+        setTrend(
+          Object.entries(counts).slice(0, 7).reverse()
+            .map(([date, count]) => ({ date, count }))
+        )
       })
-    // Pie
+
+    // ── Pie ───────────────────────────────────────────────────────────────
     db.from('appointments').select('status').then(({ data }) => {
       if (!data) return
       const counts = {}
-      data.forEach(a => { counts[a.status] = (counts[a.status]||0)+1 })
+      data.forEach(a => { counts[a.status] = (counts[a.status] || 0) + 1 })
       setPie(Object.entries(counts).map(([name, value]) => ({ name, value })))
     })
   }, [])
 
-  const fmtTsh = n => n ? `TSh ${Number(n).toLocaleString()}` : 'TSh 0'
+  const fmtTsh = n => `TSh ${Number(n || 0).toLocaleString()}`
 
   return (
     <div className="space-y-6">
@@ -65,6 +113,7 @@ export default function Dashboard() {
         <p className="text-gray-400 text-sm mt-0.5">Live overview · Daktari Tanzania</p>
       </div>
 
+      {/* ── Stat cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard icon="👥" label="Patients"     value={stats?.total_patients}       color="#0D5C4A"/>
         <StatCard icon="🩺" label="Doctors"      value={stats?.total_doctors}        color="#2D4A8A"/>
@@ -74,6 +123,7 @@ export default function Dashboard() {
         <StatCard icon="💰" label="Revenue"      value={fmtTsh(stats?.total_revenue)} color="#0D5C4A"/>
       </div>
 
+      {/* ── Charts ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 lg:col-span-2">
           <h3 className="font-bold text-gray-800 mb-4">Appointment Trend</h3>
@@ -83,7 +133,7 @@ export default function Dashboard() {
                 <BarChart data={trend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0"/>
                   <XAxis dataKey="date" tick={{ fontSize:11, fill:'#9CA3AF' }}/>
-                  <YAxis tick={{ fontSize:11, fill:'#9CA3AF' }}/>
+                  <YAxis allowDecimals={false} tick={{ fontSize:11, fill:'#9CA3AF' }}/>
                   <Tooltip contentStyle={{ borderRadius:12, fontSize:13 }}/>
                   <Bar dataKey="count" fill="#0D5C4A" radius={[6,6,0,0]} name="Appointments"/>
                 </BarChart>
@@ -108,6 +158,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── Recent appointments table ───────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="font-bold text-gray-800 mb-4">Recent Appointments</h3>
         {recent.length === 0
@@ -154,7 +205,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-4 py-3 border-b border-gray-50 text-xs text-gray-500 capitalize">
-                        {a.payment_method?.replace('_',' ')||'—'}
+                        {a.payment_method?.replace(/_/g,' ')||'—'}
                       </td>
                     </tr>
                   ))}

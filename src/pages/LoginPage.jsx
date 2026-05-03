@@ -171,10 +171,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="/ic_launcher.png"
+            src="/daktari-logo-light1.png"
             alt="Daktari Logo"
-            className="w-16 h-16 rounded-2xl mx-auto mb-4 object-cover"
-            style={{ boxShadow: '0 8px 24px rgba(13,92,74,.35)' }}
+            className="w-16 h-16 mx-auto mb-4 object-contain"
           />
           <h1 className="text-2xl font-extrabold text-gray-900">Daktari Admin</h1>
           <p className="text-gray-400 text-sm mt-1">Control Panel · Tanzania 🇹🇿</p>
