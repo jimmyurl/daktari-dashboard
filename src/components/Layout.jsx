@@ -26,9 +26,15 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-60 flex-shrink-0 flex flex-col"
         style={{ background: 'linear-gradient(180deg,#0D5C4A 0%,#074033 100%)' }}>
+
+        {/* Logo */}
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-xl">🏥</div>
+            <img
+              src="/daktari-logo-light.png"
+              alt="Daktari"
+              className="w-9 h-9 object-contain"
+            />
             <div>
               <div className="text-white font-bold text-base leading-none">Daktari</div>
               <div className="text-white/50 text-xs mt-0.5">Admin Panel</div>
